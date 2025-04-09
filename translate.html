@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voice to Translate</title>
+<style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2.8em;
+      margin-bottom: 30px;
+      animation: slideIn 1s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #micBtn {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      font-size: 32px;
+      border: none;
+      background-color: #00bcd4;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+
+    #micBtn:hover {
+      transform: scale(1.1);
+    }
+
+    #micBtn.listening {
+      animation: pulseColors 1.2s infinite;
+    }
+
+    @keyframes pulseColors {
+      0%   { background-color: #e91e63; }
+      25%  { background-color: #ff9800; }
+      50%  { background-color: #4caf50; }
+      75%  { background-color: #3f51b5; }
+      100% { background-color: #e91e63; }
+    }
+
+    select, button:not(#micBtn) {
+      font-size: 18px;
+      padding: 10px 20px;
+      margin: 15px 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: white;
+      color: #333;
+      transition: background 0.3s;
+    }
+
+    button:not(#micBtn):hover {
+      background: #f1f1f1;
+    }
+
+    #output, #translated {
+      margin-top: 20px;
+      font-size: 20px;
+      max-width: 600px;
+      animation: fadeInUp 0.8s;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    span {
+      color: #ffff99;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Speak and Translate</h1>
+
+  <button id="micBtn">🎤</button>
+
+  <div id="output">You said: <span id="speechText"></span></div>
+
+  <select id="languageSelect">
+    <option value="en">English</option>
+    <option value="sw">Swahili</option>
+    <option value="fr">French</option>
+    <option value="es">Spanish</option>
+    <option value="de">German</option>
+    <option value="hi">Hindi</option>
+    <option value="ig">Igbo</option>
+    <option value="ak">Twi (Ghana)</option>
+    <option value="xog">Lusoga (Uganda)</option> <!-- Placeholder -->
+  </select>
+
+  <button id="translateBtn">Translate</button>
+
+  <div id="translated">Translated: <span id="translatedText"></span></div>
+
+  <script>
+    const micBtn = document.getElementById("micBtn");
+    const speechText = document.getElementById("speechText");
+    const translatedText = document.getElementById("translatedText");
+    const languageSelect = document.getElementById("languageSelect");
+    const translateBtn = document.getElementById("translateBtn");
+
+    let spokenText = "";
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+
+    micBtn.onclick = () => {
+      micBtn.classList.add("listening");
+      recognition.start();
+    };
+
+    recognition.onresult = (event) => {
+      spokenText = event.results[0][0].transcript;
+      speechText.textContent = spokenText;
+      micBtn.classList.remove("listening");
+    };
+
+    recognition.onerror = (event) => {
+      speechText.textContent = "Error: " + event.error;
+      micBtn.classList.remove("listening");
+    };
+
+    translateBtn.onclick = async () => {
+      const targetLang = languageSelect.value;
+      if (!spokenText) return;
+
+      try {
+        const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(spokenText)}`);
+        const data = await response.json();
+        translatedText.textContent = data[0][0][0];
+      } catch (err) {
+        translatedText.textContent = "Translation failed.";
+      }
+    };
+  </script>
+</body>
+</html>
